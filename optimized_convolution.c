@@ -40,63 +40,29 @@ uint32_t output[size-1][size-1] = {0};
 
 int main()
 {
-	// for (int y = 0; y < size-1; y++)
-	// 	for (int x = 0; x < size-1; x++)
-	// 		for (int ky = 0; ky < 2; ky++)
-	// 			for (int kx = 0; kx < 2; kx++)
-	// 				output[y][x] += matrix[y + ky][x + kx] * kernel[ky][kx];
 
-    /* Trying to describe the (y,x) coordinates of the 2D output array based only on the 1D iterator value of the 2D output array.
-    Meaning, on a 12x12, the iterator of a corresponding 1D array iterator goes from 0-143 because 12*12 = 144.
-    Given this iterator value, we can describe the corresponding 2D coordinates on a 2D array.
-    For example, element [3][2] of a 2D array is element 38.
-    Remember, on a 2D array, the 1st value of the y value, and the 2nd is the x value.
-    
-    The y(row) of the array can be described as the current iterator value div the size of the array.
-    It describes how many times "size" can fit into the current iterator value. 
-    Example for size = 12: 
-    For the 1st row, meaning from 0-11, iterator div 12 gives us 0.
-    On the 2nd row, from 12-23, iterator div 12 gives us 1, etc.
-        Finally, row = iterator / size
-    
-    The x(column) of the array can be described as the current iterator value reduced by the current row*size of the array.
-    It takes the iterator value and reduces it by a specific amount so that the "x" value always sits between 0-size.
-    Example for size = 12: For the 1st row, meaning from 0-11, iterator - (row * size) will always clamp the 1st row values from 0-11.
-    Example for value 27 of a 12x12 array:
-    27 - (row * size) =>
-    27 - (iterator / size * size) =>
-    27 - (27 / 12 * 12) => 
-    27 - (2 * 12) => 
-    27-24 = 3
-    Indeed, the value 27 on a 2D array has the coordinates of [2][3]
-    In the "iterator/size * size" the '/' and the '*' do not cancel each other out.
-        Finally, column = iterator - (row * size) =>
-        column = iterator - (iterator / size * size)
+    /*
+    Based on the code of the medium architecture, a more in depth unrolling will happen for the performance architecture.
+    Instead of "size*size" repetitions for the loop, we will try to make it complete all calculations in "size" repetitions.
     */
+    
+    // Calculating the convolution array by "unrolling" output calculation into its 12 constituent parts
+    for(int iter_y=0; iter_y<size-1; iter_y++)
+    {
+        // Each "block" here represents the calculations that will happen per column
+        for(int iter_x=0; iter_x<size-1; iter_x++)
+        {
+            //output_y = iter/(size-1);
+            //output_x = iter - (iter/(size-1) * (size-1));
 
-    // Create vars that will store the values of the current (y,x) coords of the 2D array so that we wont have to recalculate it each time
-    int output_y, output_x;
-
-    // Calculating the convolution array by using only the 1D iterator of the 2D array.
-    for(int iter=0; iter<(size-1)*(size-1); iter++)
-	{
-        output_y = iter/(size-1);
-        output_x = iter - (iter/(size-1) * (size-1));
-
-	    output[output_y][output_x] = 
-
-            // matrix[y][x]*kernel[0][0] => matrix[y][x]*15 => matrix[y][x]* 2^4 - matrix[y][x]
-            matrix[output_y][output_x] * 15 +
-
-            // matrix[y][x]*kernel[0][1] => matrix[y][x]*2 => //matrix[y][x]*2^1
-            ( matrix[output_y][output_x + 1] << 1 ) +
-
-            // matrix[y][x]*kernel[1][0] => matrix[y][x]*3 => //matrix[y][x]*2^1 + matrix[y][x]
-            matrix[output_y + 1][output_x] * 3 +
-
-            // matrix[y][x]*kernel[1][1] => matrix[y][x]*5 => //matrix[y][x]*2^2 + matrix[y][x]
-            matrix[output_y + 1][output_x + 1] * 5;
-	}
+            // calculates all the output values for: output[0][iter]
+            output[iter_y][iter_x] = 
+                matrix[iter_y    ][iter_x    ] * 15 +
+               (matrix[iter_y    ][iter_x + 1]<< 1) +
+                matrix[iter_y + 1][iter_x    ] * 3  +
+                matrix[iter_y + 1][iter_x + 1] * 5;
+        }
+    }
 
     // Checking if the output is the same as the one with the original method of calculation
     // for(int iter=0; iter<(size-1)*(size-1); iter++)
